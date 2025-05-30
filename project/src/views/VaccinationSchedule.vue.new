@@ -1,44 +1,100 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useAnimalStore } from '../stores/animalStore'
-import { format, parseISO, differenceInDays, addDays } from 'date-fns'
+import { format, parseISO, differenceInDays, addDays, addMonths } from 'date-fns'
+import { es } from 'date-fns/locale'
+import type { VaccinationRecord } from '../types'
 
 const animalStore = useAnimalStore()
+const showEditForm = ref(false)
 
-const newVaccine = ref({
+type Species = 'all' | 'Ganado' | 'Caballos'
+
+interface VaccineForm {
+  name: string
+  description: string
+  lastApplied: string
+  nextDueDate: string
+  species: Species
+}
+
+const initialVaccineForm: VaccineForm = {
   name: '',
   description: '',
   lastApplied: new Date().toISOString().split('T')[0],
-  nextDueDate: '',
+  nextDueDate: addMonths(new Date(), 6).toISOString().split('T')[0],
   species: 'all'
-})
+}
+
+const vaccineForm = ref<VaccineForm>({ ...initialVaccineForm })
+const editingVaccineId = ref('')
 
 const speciesOptions = [
-  { value: 'all', label: 'Todas las especies' },
-  { value: 'Ganado', label: 'Ganado' },
-  { value: 'Caballos', label: 'Caballos' }
+  { value: 'all' as const, label: 'Todas las especies' },
+  { value: 'Ganado' as const, label: 'Ganado' },
+  { value: 'Caballos' as const, label: 'Caballos' }
 ]
 
+const resetForm = () => {
+  vaccineForm.value = { ...initialVaccineForm }
+  editingVaccineId.value = ''
+  showEditForm.value = false
+}
+
 const addVaccine = () => {
-  if (!newVaccine.value.name || !newVaccine.value.lastApplied || !newVaccine.value.nextDueDate) return
+  if (!vaccineForm.value.name || !vaccineForm.value.lastApplied || !vaccineForm.value.nextDueDate || !vaccineForm.value.species) {
+    alert('Por favor complete todos los campos requeridos')
+    return
+  }
 
-  animalStore.addVaccinationRecord({
-    id: Date.now().toString(),
-    ...newVaccine.value
-  })
+  try {
+    const vaccineData = {
+      name: vaccineForm.value.name,
+      description: vaccineForm.value.description,
+      lastApplied: vaccineForm.value.lastApplied,
+      nextDueDate: vaccineForm.value.nextDueDate,
+      species: vaccineForm.value.species
+    }
 
-  // Reset form
-  newVaccine.value = {
-    name: '',
-    description: '',
-    lastApplied: new Date().toISOString().split('T')[0],
-    nextDueDate: '',
-    species: 'all'
+    if (editingVaccineId.value) {
+      animalStore.updateVaccinationRecord(editingVaccineId.value, vaccineData)
+      console.log('Vacuna actualizada:', vaccineData)
+    } else {
+      animalStore.addVaccinationRecord(vaccineData)
+      console.log('Nueva vacuna agregada:', vaccineData)
+    }
+    resetForm()
+  } catch (error) {
+    console.error('Error al guardar la vacuna:', error)
+    alert('Ocurrió un error al guardar la vacuna')
   }
 }
 
-const upcomingVaccinations = computed(() => {
+const editVaccine = (vaccine: VaccinationRecord) => {
+  vaccineForm.value = {
+    name: vaccine.name,
+    description: vaccine.description || '',
+    lastApplied: vaccine.lastApplied,
+    nextDueDate: vaccine.nextDueDate,
+    species: vaccine.species
+  }
+  editingVaccineId.value = vaccine.id
+  showEditForm.value = true
+}
+
+const calculateNextDueDate = () => {
+  if (vaccineForm.value.lastApplied) {
+    const lastApplied = parseISO(vaccineForm.value.lastApplied)
+    vaccineForm.value.nextDueDate = addMonths(lastApplied, 6).toISOString().split('T')[0]
+  }
+}
+
+const allVaccinations = computed(() => {
   return animalStore.vaccinationRecords
+})
+
+const upcomingVaccinations = computed(() => {
+  return allVaccinations.value
     .filter(record => {
       const daysUntilDue = differenceInDays(parseISO(record.nextDueDate), new Date())
       return daysUntilDue >= 0
@@ -47,7 +103,7 @@ const upcomingVaccinations = computed(() => {
 })
 
 const overdueVaccinations = computed(() => {
-  return animalStore.vaccinationRecords
+  return allVaccinations.value
     .filter(record => {
       const daysUntilDue = differenceInDays(parseISO(record.nextDueDate), new Date())
       return daysUntilDue < 0
@@ -55,47 +111,65 @@ const overdueVaccinations = computed(() => {
     .sort((a, b) => parseISO(b.nextDueDate).getTime() - parseISO(a.nextDueDate).getTime())
 })
 
-const updateVaccination = (record: any) => {
-  animalStore.updateVaccinationRecord(record.id, {
+const updateVaccination = (record: VaccinationRecord) => {
+  if (!confirm('¿Desea marcar esta vacuna como aplicada hoy?')) return
+
+  const updatedRecord = {
     ...record,
     lastApplied: new Date().toISOString().split('T')[0],
-    nextDueDate: addDays(new Date(), 180).toISOString().split('T')[0] // Por defecto 6 meses
-  })
+    nextDueDate: addMonths(new Date(), 6).toISOString().split('T')[0]
+  }
+  animalStore.updateVaccinationRecord(record.id, updatedRecord)
 }
 
 const deleteVaccination = (id: string) => {
-  if (confirm('¿Estás seguro de que deseas eliminar este registro de vacunación?')) {
+  if (confirm('¿Está seguro de que desea eliminar este registro de vacunación?')) {
     animalStore.deleteVaccinationRecord(id)
   }
+}
+
+const formatDate = (date: string) => {
+  return format(parseISO(date), 'dd/MM/yyyy', { locale: es })
+}
+
+const getDaysUntilDue = (dueDate: string) => {
+  return differenceInDays(parseISO(dueDate), new Date())
 }
 </script>
 
 <template>
   <div class="p-6">
-    <div class="mb-6">
+    <div class="mb-6 flex justify-between items-center">
       <h1 class="text-2xl font-bold text-blue-900">Calendario de Vacunaciones</h1>
+      <div class="text-sm text-gray-500">
+        Total de registros: {{ allVaccinations.length }}
+      </div>
     </div>
 
-    <!-- Formulario para nueva vacuna -->
+    <!-- Formulario para agregar/editar vacuna -->
     <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-      <h2 class="text-lg font-semibold text-blue-900 mb-4">Registrar Nueva Vacuna</h2>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <h2 class="text-lg font-semibold text-blue-900 mb-4">
+        {{ editingVaccineId ? 'Editar Vacuna' : 'Registrar Nueva Vacuna' }}
+      </h2>
+      <form @submit.prevent="addVaccine" class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <label class="block text-sm font-medium text-gray-700">Nombre de la Vacuna</label>
           <input
-            v-model="newVaccine.name"
+            v-model="vaccineForm.name"
             type="text"
             required
             class="mt-1 w-full px-4 py-2 rounded-lg border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Ej: Aftosa"
           />
         </div>
 
         <div>
           <label class="block text-sm font-medium text-gray-700">Última Aplicación</label>
           <input
-            v-model="newVaccine.lastApplied"
+            v-model="vaccineForm.lastApplied"
             type="date"
             required
+            @change="calculateNextDueDate"
             class="mt-1 w-full px-4 py-2 rounded-lg border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
         </div>
@@ -103,7 +177,7 @@ const deleteVaccination = (id: string) => {
         <div>
           <label class="block text-sm font-medium text-gray-700">Próxima Aplicación</label>
           <input
-            v-model="newVaccine.nextDueDate"
+            v-model="vaccineForm.nextDueDate"
             type="date"
             required
             class="mt-1 w-full px-4 py-2 rounded-lg border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -113,7 +187,8 @@ const deleteVaccination = (id: string) => {
         <div>
           <label class="block text-sm font-medium text-gray-700">Especie</label>
           <select
-            v-model="newVaccine.species"
+            v-model="vaccineForm.species"
+            required
             class="mt-1 w-full px-4 py-2 rounded-lg border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             <option v-for="option in speciesOptions" :key="option.value" :value="option.value">
@@ -125,25 +200,38 @@ const deleteVaccination = (id: string) => {
         <div class="md:col-span-3">
           <label class="block text-sm font-medium text-gray-700">Descripción (opcional)</label>
           <textarea
-            v-model="newVaccine.description"
+            v-model="vaccineForm.description"
             rows="2"
             class="mt-1 w-full px-4 py-2 rounded-lg border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Información adicional sobre la vacuna..."
           ></textarea>
         </div>
-      </div>
-      <div class="mt-4 flex justify-end">
-        <button
-          @click="addVaccine"
-          class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          Agregar Vacuna
-        </button>
-      </div>
+
+        <div class="md:col-span-3 flex justify-end gap-4">
+          <button
+            type="button"
+            v-if="showEditForm"
+            @click="resetForm"
+            class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            {{ editingVaccineId ? 'Guardar Cambios' : 'Agregar Vacuna' }}
+          </button>
+        </div>
+      </form>
     </div>
 
     <!-- Vacunaciones Vencidas -->
     <div v-if="overdueVaccinations.length > 0" class="bg-white rounded-lg shadow-md p-6 mb-6">
-      <h2 class="text-lg font-semibold text-red-600 mb-4">Vacunaciones Vencidas</h2>
+      <h2 class="text-lg font-semibold text-red-600 mb-4">
+        Vacunaciones Vencidas
+        <span class="text-sm font-normal">({{ overdueVaccinations.length }})</span>
+      </h2>
       <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
           <thead>
@@ -152,10 +240,10 @@ const deleteVaccination = (id: string) => {
               <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">Especie</th>
               <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">Última Aplicación</th>
               <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">Fecha Prevista</th>
-              <th class="px-6 py-3 bg-gray-50"></th>
+              <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody class="divide-y divide-gray-200">
             <tr v-for="record in overdueVaccinations" :key="record.id" class="hover:bg-red-50">
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="text-sm font-medium text-gray-900">{{ record.name }}</div>
@@ -165,25 +253,35 @@ const deleteVaccination = (id: string) => {
                 {{ record.species === 'all' ? 'Todas' : record.species }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {{ format(parseISO(record.lastApplied), 'dd/MM/yyyy') }}
+                {{ formatDate(record.lastApplied) }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <span class="text-red-600 font-medium">
-                  {{ format(parseISO(record.nextDueDate), 'dd/MM/yyyy') }}
+                  {{ formatDate(record.nextDueDate) }}
+                  <span class="text-xs ml-1">({{ getDaysUntilDue(record.nextDueDate) }}d)</span>
                 </span>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <button
+                  @click="editVaccine(record)"
+                  class="text-blue-600 hover:text-blue-900 mr-2"
+                  title="Editar"
+                >
+                  <i class="pi pi-pencil"></i>
+                </button>
                 <button
                   @click="updateVaccination(record)"
-                  class="text-blue-600 hover:text-blue-900 mr-3"
+                  class="text-green-600 hover:text-green-900 mr-2"
+                  title="Marcar como aplicada"
                 >
-                  Aplicada
+                  <i class="pi pi-check"></i>
                 </button>
                 <button
                   @click="deleteVaccination(record.id)"
                   class="text-red-600 hover:text-red-900"
+                  title="Eliminar"
                 >
-                  Eliminar
+                  <i class="pi pi-trash"></i>
                 </button>
               </td>
             </tr>
@@ -194,8 +292,11 @@ const deleteVaccination = (id: string) => {
 
     <!-- Próximas Vacunaciones -->
     <div class="bg-white rounded-lg shadow-md p-6">
-      <h2 class="text-lg font-semibold text-blue-900 mb-4">Próximas Vacunaciones</h2>
-      <div class="overflow-x-auto">
+      <h2 class="text-lg font-semibold text-blue-900 mb-4">
+        Próximas Vacunaciones
+        <span class="text-sm font-normal">({{ upcomingVaccinations.length }})</span>
+      </h2>
+      <div v-if="upcomingVaccinations.length > 0" class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
           <thead>
             <tr>
@@ -203,10 +304,10 @@ const deleteVaccination = (id: string) => {
               <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">Especie</th>
               <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">Última Aplicación</th>
               <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">Fecha Prevista</th>
-              <th class="px-6 py-3 bg-gray-50"></th>
+              <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody class="divide-y divide-gray-200">
             <tr v-for="record in upcomingVaccinations" :key="record.id" class="hover:bg-gray-50">
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="text-sm font-medium text-gray-900">{{ record.name }}</div>
@@ -216,30 +317,43 @@ const deleteVaccination = (id: string) => {
                 {{ record.species === 'all' ? 'Todas' : record.species }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {{ format(parseISO(record.lastApplied), 'dd/MM/yyyy') }}
+                {{ formatDate(record.lastApplied) }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <span class="text-green-600 font-medium">
-                  {{ format(parseISO(record.nextDueDate), 'dd/MM/yyyy') }}
+                  {{ formatDate(record.nextDueDate) }}
+                  <span class="text-xs ml-1">({{ getDaysUntilDue(record.nextDueDate) }}d)</span>
                 </span>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <button
+                  @click="editVaccine(record)"
+                  class="text-blue-600 hover:text-blue-900 mr-2"
+                  title="Editar"
+                >
+                  <i class="pi pi-pencil"></i>
+                </button>
                 <button
                   @click="updateVaccination(record)"
-                  class="text-blue-600 hover:text-blue-900 mr-3"
+                  class="text-green-600 hover:text-green-900 mr-2"
+                  title="Marcar como aplicada"
                 >
-                  Aplicada
+                  <i class="pi pi-check"></i>
                 </button>
                 <button
                   @click="deleteVaccination(record.id)"
                   class="text-red-600 hover:text-red-900"
+                  title="Eliminar"
                 >
-                  Eliminar
+                  <i class="pi pi-trash"></i>
                 </button>
               </td>
             </tr>
           </tbody>
         </table>
+      </div>
+      <div v-else class="text-center text-gray-500 py-4">
+        No hay próximas vacunaciones programadas
       </div>
     </div>
   </div>

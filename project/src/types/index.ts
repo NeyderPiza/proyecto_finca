@@ -39,6 +39,8 @@ export interface VaccinationRecord {
   lastApplied: string
   nextDueDate: string
   species: 'Ganado' | 'Caballos' | 'all'
+  cost?: number
+  notes?: string
 }
 
 export interface MedicalEvent {
