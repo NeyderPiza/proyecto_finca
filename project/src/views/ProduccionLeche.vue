@@ -7,11 +7,11 @@ import type { MilkProduction, MilkExpense } from '../types'
 
 const animalStore = useAnimalStore()
 const showAddForm = ref(false)
-const showExpenseForm = ref(false)
-const selectedProductionId = ref('')
 const isEditing = ref(false)
 const selectedYear = ref(new Date().getFullYear())
 const selectedMonth = ref(new Date().getMonth() + 1)
+const selectedProductionId = ref('')
+const showExpenseForm = ref(false) // Solo se usa para gastos específicos de un registro
 
 const formData = ref<MilkProduction>({
   id: '',
@@ -396,18 +396,7 @@ const submitExpense = () => {
           </div>
         </form>
       </div>
-    </div>
-
-    <!-- Botón para Agregar Gasto -->
-    <div class="fixed bottom-6 right-6">
-      <button
-        @click="showExpenseForm = true"
-        class="bg-green-600 text-white px-4 py-2 rounded-full hover:bg-green-700 transition-colors shadow-lg"
-      >
-        <i class="pi pi-plus mr-2"></i>
-        Registrar Gasto
-      </button>
-    </div>
+    </div>    <!-- El botón de registro de gasto general ha sido eliminado -->
 
     <!-- Modal de Registro de Gasto -->
     <div v-if="showExpenseForm" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
