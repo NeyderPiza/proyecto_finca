@@ -7,25 +7,32 @@ import type { VaccinationRecord } from '../types'
 
 const animalStore = useAnimalStore()
 const showEditForm = ref(false)
-const showExpenseForm = ref(false)
 
-const initialVaccineForm = {
+type Species = 'all' | 'Ganado' | 'Caballos'
+
+interface VaccineForm {
+  name: string
+  description: string
+  lastApplied: string
+  nextDueDate: string
+  species: Species
+}
+
+const initialVaccineForm: VaccineForm = {
   name: '',
   description: '',
   lastApplied: new Date().toISOString().split('T')[0],
   nextDueDate: addMonths(new Date(), 6).toISOString().split('T')[0],
-  species: 'all',
-  cost: 0,
-  notes: ''
+  species: 'all'
 }
 
-const vaccineForm = ref({ ...initialVaccineForm })
+const vaccineForm = ref<VaccineForm>({ ...initialVaccineForm })
 const editingVaccineId = ref('')
 
 const speciesOptions = [
-  { value: 'all', label: 'Todas las especies' },
-  { value: 'Ganado', label: 'Ganado' },
-  { value: 'Caballos', label: 'Caballos' }
+  { value: 'all' as const, label: 'Todas las especies' },
+  { value: 'Ganado' as const, label: 'Ganado' },
+  { value: 'Caballos' as const, label: 'Caballos' }
 ]
 
 const resetForm = () => {
@@ -41,19 +48,20 @@ const addVaccine = () => {
   }
 
   try {
+    const vaccineData = {
+      name: vaccineForm.value.name,
+      description: vaccineForm.value.description,
+      lastApplied: vaccineForm.value.lastApplied,
+      nextDueDate: vaccineForm.value.nextDueDate,
+      species: vaccineForm.value.species
+    }
+
     if (editingVaccineId.value) {
-      animalStore.updateVaccinationRecord(editingVaccineId.value, vaccineForm.value)
+      animalStore.updateVaccinationRecord(editingVaccineId.value, vaccineData)
+      console.log('Vacuna actualizada:', vaccineData)
     } else {
-      const vaccineData = {
-        name: vaccineForm.value.name,
-        description: vaccineForm.value.description,
-        lastApplied: vaccineForm.value.lastApplied,
-        nextDueDate: vaccineForm.value.nextDueDate,
-        species: vaccineForm.value.species,
-        cost: vaccineForm.value.cost,
-        notes: vaccineForm.value.notes
-      }
       animalStore.addVaccinationRecord(vaccineData)
+      console.log('Nueva vacuna agregada:', vaccineData)
     }
     resetForm()
   } catch (error) {
@@ -63,7 +71,13 @@ const addVaccine = () => {
 }
 
 const editVaccine = (vaccine: VaccinationRecord) => {
-  vaccineForm.value = { ...vaccine }
+  vaccineForm.value = {
+    name: vaccine.name,
+    description: vaccine.description || '',
+    lastApplied: vaccine.lastApplied,
+    nextDueDate: vaccine.nextDueDate,
+    species: vaccine.species
+  }
   editingVaccineId.value = vaccine.id
   showEditForm.value = true
 }
@@ -75,8 +89,12 @@ const calculateNextDueDate = () => {
   }
 }
 
-const upcomingVaccinations = computed(() => {
+const allVaccinations = computed(() => {
   return animalStore.vaccinationRecords
+})
+
+const upcomingVaccinations = computed(() => {
+  return allVaccinations.value
     .filter(record => {
       const daysUntilDue = differenceInDays(parseISO(record.nextDueDate), new Date())
       return daysUntilDue >= 0
@@ -85,7 +103,7 @@ const upcomingVaccinations = computed(() => {
 })
 
 const overdueVaccinations = computed(() => {
-  return animalStore.vaccinationRecords
+  return allVaccinations.value
     .filter(record => {
       const daysUntilDue = differenceInDays(parseISO(record.nextDueDate), new Date())
       return daysUntilDue < 0
@@ -115,15 +133,17 @@ const formatDate = (date: string) => {
 }
 
 const getDaysUntilDue = (dueDate: string) => {
-  const days = differenceInDays(parseISO(dueDate), new Date())
-  return days
+  return differenceInDays(parseISO(dueDate), new Date())
 }
 </script>
 
 <template>
   <div class="p-6">
-    <div class="mb-6">
+    <div class="mb-6 flex justify-between items-center">
       <h1 class="text-2xl font-bold text-blue-900">Calendario de Vacunaciones</h1>
+      <div class="text-sm text-gray-500">
+        Total de registros: {{ allVaccinations.length }}
+      </div>
     </div>
 
     <!-- Formulario para agregar/editar vacuna -->
@@ -132,7 +152,6 @@ const getDaysUntilDue = (dueDate: string) => {
         {{ editingVaccineId ? 'Editar Vacuna' : 'Registrar Nueva Vacuna' }}
       </h2>
       <form @submit.prevent="addVaccine" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <!-- Campos existentes -->
         <div>
           <label class="block text-sm font-medium text-gray-700">Nombre de la Vacuna</label>
           <input
@@ -140,6 +159,7 @@ const getDaysUntilDue = (dueDate: string) => {
             type="text"
             required
             class="mt-1 w-full px-4 py-2 rounded-lg border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Ej: Aftosa"
           />
         </div>
 
@@ -177,23 +197,13 @@ const getDaysUntilDue = (dueDate: string) => {
           </select>
         </div>
 
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Costo</label>
-          <input
-            v-model="vaccineForm.cost"
-            type="number"
-            min="0"
-            step="1000"
-            class="mt-1 w-full px-4 py-2 rounded-lg border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          />
-        </div>
-
         <div class="md:col-span-3">
-          <label class="block text-sm font-medium text-gray-700">Descripción y notas</label>
+          <label class="block text-sm font-medium text-gray-700">Descripción (opcional)</label>
           <textarea
             v-model="vaccineForm.description"
             rows="2"
             class="mt-1 w-full px-4 py-2 rounded-lg border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Información adicional sobre la vacuna..."
           ></textarea>
         </div>
 
@@ -219,56 +229,59 @@ const getDaysUntilDue = (dueDate: string) => {
     <!-- Vacunaciones Vencidas -->
     <div v-if="overdueVaccinations.length > 0" class="bg-white rounded-lg shadow-md p-6 mb-6">
       <h2 class="text-lg font-semibold text-red-600 mb-4">
-        Vacunaciones Vencidas ({{ overdueVaccinations.length }})
+        Vacunaciones Vencidas
+        <span class="text-sm font-normal">({{ overdueVaccinations.length }})</span>
       </h2>
       <div class="overflow-x-auto">
-        <table class="min-w-full">
+        <table class="min-w-full divide-y divide-gray-200">
           <thead>
-            <tr class="bg-gray-50">
-              <th class="px-4 py-2 text-left">Vacuna</th>
-              <th class="px-4 py-2 text-left">Especie</th>
-              <th class="px-4 py-2 text-left">Última Aplicación</th>
-              <th class="px-4 py-2 text-left">Fecha Vencimiento</th>
-              <th class="px-4 py-2 text-right">Costo</th>
-              <th class="px-4 py-2 text-center">Acciones</th>
+            <tr>
+              <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">Vacuna</th>
+              <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">Especie</th>
+              <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">Última Aplicación</th>
+              <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">Fecha Prevista</th>
+              <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
             </tr>
           </thead>
-          <tbody>
-            <tr v-for="record in overdueVaccinations" :key="record.id" class="border-t">
-              <td class="px-4 py-2">
-                <div class="font-medium">{{ record.name }}</div>
-                <div class="text-sm text-gray-500">{{ record.description }}</div>
+          <tbody class="divide-y divide-gray-200">
+            <tr v-for="record in overdueVaccinations" :key="record.id" class="hover:bg-red-50">
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">{{ record.name }}</div>
+                <div v-if="record.description" class="text-sm text-gray-500">{{ record.description }}</div>
               </td>
-              <td class="px-4 py-2">{{ record.species }}</td>
-              <td class="px-4 py-2">{{ formatDate(record.lastApplied) }}</td>
-              <td class="px-4 py-2">
-                <span class="text-red-600">{{ formatDate(record.nextDueDate) }}</span>
-                <br>
-                <span class="text-sm text-red-500">
-                  ({{ Math.abs(getDaysUntilDue(record.nextDueDate)) }} días de retraso)
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {{ record.species === 'all' ? 'Todas' : record.species }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {{ formatDate(record.lastApplied) }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="text-red-600 font-medium">
+                  {{ formatDate(record.nextDueDate) }}
+                  <span class="text-xs ml-1">({{ getDaysUntilDue(record.nextDueDate) }}d)</span>
                 </span>
               </td>
-              <td class="px-4 py-2 text-right">
-                {{ record.cost ? `$${record.cost.toLocaleString()}` : 'N/A' }}
-              </td>
-              <td class="px-4 py-2 text-center">
-                <button
-                  @click="updateVaccination(record)"
-                  class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 mr-2"
-                >
-                  Aplicar
-                </button>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                 <button
                   @click="editVaccine(record)"
-                  class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 mr-2"
+                  class="text-blue-600 hover:text-blue-900 mr-2"
+                  title="Editar"
                 >
-                  Editar
+                  <i class="pi pi-pencil"></i>
+                </button>
+                <button
+                  @click="updateVaccination(record)"
+                  class="text-green-600 hover:text-green-900 mr-2"
+                  title="Marcar como aplicada"
+                >
+                  <i class="pi pi-check"></i>
                 </button>
                 <button
                   @click="deleteVaccination(record.id)"
-                  class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                  class="text-red-600 hover:text-red-900"
+                  title="Eliminar"
                 >
-                  Eliminar
+                  <i class="pi pi-trash"></i>
                 </button>
               </td>
             </tr>
@@ -280,61 +293,67 @@ const getDaysUntilDue = (dueDate: string) => {
     <!-- Próximas Vacunaciones -->
     <div class="bg-white rounded-lg shadow-md p-6">
       <h2 class="text-lg font-semibold text-blue-900 mb-4">
-        Próximas Vacunaciones ({{ upcomingVaccinations.length }})
+        Próximas Vacunaciones
+        <span class="text-sm font-normal">({{ upcomingVaccinations.length }})</span>
       </h2>
-      <div class="overflow-x-auto">
-        <table class="min-w-full">
+      <div v-if="upcomingVaccinations.length > 0" class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
           <thead>
-            <tr class="bg-gray-50">
-              <th class="px-4 py-2 text-left">Vacuna</th>
-              <th class="px-4 py-2 text-left">Especie</th>
-              <th class="px-4 py-2 text-left">Última Aplicación</th>
-              <th class="px-4 py-2 text-left">Próxima Aplicación</th>
-              <th class="px-4 py-2 text-right">Costo</th>
-              <th class="px-4 py-2 text-center">Acciones</th>
+            <tr>
+              <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">Vacuna</th>
+              <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">Especie</th>
+              <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">Última Aplicación</th>
+              <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">Fecha Prevista</th>
+              <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
             </tr>
           </thead>
-          <tbody>
-            <tr v-for="record in upcomingVaccinations" :key="record.id" class="border-t">
-              <td class="px-4 py-2">
-                <div class="font-medium">{{ record.name }}</div>
-                <div class="text-sm text-gray-500">{{ record.description }}</div>
+          <tbody class="divide-y divide-gray-200">
+            <tr v-for="record in upcomingVaccinations" :key="record.id" class="hover:bg-gray-50">
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">{{ record.name }}</div>
+                <div v-if="record.description" class="text-sm text-gray-500">{{ record.description }}</div>
               </td>
-              <td class="px-4 py-2">{{ record.species }}</td>
-              <td class="px-4 py-2">{{ formatDate(record.lastApplied) }}</td>
-              <td class="px-4 py-2">
-                <span>{{ formatDate(record.nextDueDate) }}</span>
-                <br>
-                <span class="text-sm text-gray-500">
-                  (en {{ getDaysUntilDue(record.nextDueDate) }} días)
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {{ record.species === 'all' ? 'Todas' : record.species }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {{ formatDate(record.lastApplied) }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="text-green-600 font-medium">
+                  {{ formatDate(record.nextDueDate) }}
+                  <span class="text-xs ml-1">({{ getDaysUntilDue(record.nextDueDate) }}d)</span>
                 </span>
               </td>
-              <td class="px-4 py-2 text-right">
-                {{ record.cost ? `$${record.cost.toLocaleString()}` : 'N/A' }}
-              </td>
-              <td class="px-4 py-2 text-center">
-                <button
-                  @click="updateVaccination(record)"
-                  class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 mr-2"
-                >
-                  Aplicar
-                </button>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                 <button
                   @click="editVaccine(record)"
-                  class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 mr-2"
+                  class="text-blue-600 hover:text-blue-900 mr-2"
+                  title="Editar"
                 >
-                  Editar
+                  <i class="pi pi-pencil"></i>
+                </button>
+                <button
+                  @click="updateVaccination(record)"
+                  class="text-green-600 hover:text-green-900 mr-2"
+                  title="Marcar como aplicada"
+                >
+                  <i class="pi pi-check"></i>
                 </button>
                 <button
                   @click="deleteVaccination(record.id)"
-                  class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                  class="text-red-600 hover:text-red-900"
+                  title="Eliminar"
                 >
-                  Eliminar
+                  <i class="pi pi-trash"></i>
                 </button>
               </td>
             </tr>
           </tbody>
         </table>
+      </div>
+      <div v-else class="text-center text-gray-500 py-4">
+        No hay próximas vacunaciones programadas
       </div>
     </div>
   </div>

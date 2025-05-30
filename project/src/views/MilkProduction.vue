@@ -111,28 +111,6 @@ const validateDate = (date: string): { valid: boolean; message?: string } => {
     return { valid: false, message: 'No se pueden registrar fechas futuras' }
   }
 
-  const productions = [...animalStore.milkProductions]
-  if (productions.length === 0) return { valid: true }
-
-  productions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-  
-  if (isEditing.value) {
-    productions.splice(productions.findIndex(p => p.id === formData.value.id), 1)
-  }
-
-  const lastProduction = productions[0]
-  if (!lastProduction) return { valid: true }
-
-  const lastDate = parseISO(lastProduction.date)
-  const minNextDate = addDays(lastDate, 15)
-
-  if (isBefore(selectedDate, minNextDate)) {
-    return { 
-      valid: false, 
-      message: `Debe esperar 15 días desde el último registro (${format(lastDate, 'dd/MM/yyyy')})`
-    }
-  }
-
   return { valid: true }
 }
 

@@ -178,6 +178,32 @@ export const useAnimalStore = defineStore('animals', () => {
   const horseCount = computed(() => 
     animals.value.filter(a => a.species === 'Caballos' && a.status === 'active').length
   )
+  // Actions para vacunaciones
+  function addVaccinationRecord(record: Omit<VaccinationRecord, 'id'>) {
+    const id = Date.now().toString()
+    const newRecord = { ...record, id }
+    console.log('Agregando nueva vacuna:', newRecord) // Para debugging
+    vaccinationRecords.value = [...vaccinationRecords.value, newRecord]
+  }
+
+  function updateVaccinationRecord(id: string, updates: Partial<VaccinationRecord>) {
+    const index = vaccinationRecords.value.findIndex(r => r.id === id)
+    if (index !== -1) {
+      console.log('Actualizando vacuna:', id, updates) // Para debugging
+      vaccinationRecords.value[index] = { 
+        ...vaccinationRecords.value[index], 
+        ...updates 
+      }
+    }
+  }
+
+  function deleteVaccinationRecord(id: string) {
+    const index = vaccinationRecords.value.findIndex(r => r.id === id)
+    if (index !== -1) {
+      console.log('Eliminando vacuna:', id) // Para debugging
+      vaccinationRecords.value = vaccinationRecords.value.filter(r => r.id !== id)
+    }
+  }
   
   const upcomingVaccinations = computed(() => {
     const now = new Date()
@@ -474,6 +500,9 @@ export const useAnimalStore = defineStore('animals', () => {
     addMilkExpense,
     updateMilkProduction,
     deleteMilkProduction,
-    getHistoricalMonthlyData
+    getHistoricalMonthlyData,
+    addVaccinationRecord,
+    updateVaccinationRecord,
+    deleteVaccinationRecord
   }
 })
