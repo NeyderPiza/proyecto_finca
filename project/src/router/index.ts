@@ -1,12 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Dashboard from '../views/Dashboard.vue'
-import AnimalList from '../views/AnimalList.vue'
-import AnimalDetail from '../views/AnimalDetail.vue'
-import AnimalForm from '../views/AnimalForm.vue'
-import VaccinationSchedule from '../views/VaccinationSchedule.vue'
-import Reports from '../views/Reports.vue'
-import Finance from '../views/Finance.vue'
-import MilkProduction from '../views/MilkProduction.vue'
+import AnimalList from '../views/AnimalLista.vue'
+import AnimalDetail from '../views/AnimalDetalles.vue'
+import AnimalForm from '../views/AnimalFormulario.vue'
+import VaccinationSchedule from '../views/Vacunaciones.vue'
+import Reports from '../views/Reportes.vue'
+import Finance from '../views/Finanzas.vue'
+import MilkProduction from '../views/ProduccionLeche.vue'
 
 const router = createRouter({
   history: createWebHistory(),
