@@ -35,7 +35,7 @@ const isActive = (path: string) => {
     <div class="p-4 flex items-center justify-between border-b border-blue-100">
       <div class="flex items-center space-x-3" :class="{ 'justify-center': !isOpen }">
         <img src="/src/assets/farm-logo.png" alt="Logo Granja" class="h-10 w-10" />
-        <h1 v-if="isOpen" class="text-xl font-bold text-blue-600">GranjaApp</h1>
+        <h1 v-if="isOpen" class="text-xl font-bold text-blue-600">FincaPiza</h1>
       </div>
       <button
         @click="emit('toggle')"
