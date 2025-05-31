@@ -8,6 +8,7 @@ import Reports from '../views/Reportes.vue'
 import Finance from '../views/Finanzas.vue'
 import MilkProduction from '../views/ProduccionLeche.vue'
 import Login from '../views/Login.vue'
+import HistorialGastos from '../views/HistorialGastos.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -69,6 +70,12 @@ const router = createRouter({
       path: '/milk-production',
       name: 'Producción de Leche',
       component: MilkProduction
+    },
+    {
+      path: '/expense-history',
+      name: 'Historial de Gastos',
+      component: HistorialGastos,
+      meta: { requiresAuth: true }
     }
   ]
 })

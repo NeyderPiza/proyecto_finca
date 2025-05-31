@@ -19,7 +19,8 @@ const navigationItems = [
   { name: 'Vacunaciones', path: '/vaccinations', icon: 'pi pi-calendar' },
   { name: 'Finanzas', path: '/finance', icon: 'pi pi-dollar' },
   { name: 'Informes', path: '/reports', icon: 'pi pi-chart-bar' },
-  { name: 'Producción de Leche', path: '/milk-production', icon: 'pi pi-chart-bar' }
+  { name: 'Producción de Leche', path: '/milk-production', icon: 'pi pi-chart-bar' },
+  { name: 'Historial de Gastos', path: '/expense-history', icon: 'pi pi-history' }
 ]
 
 const isActive = (path: string) => {
