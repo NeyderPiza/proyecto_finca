@@ -7,46 +7,58 @@ import VaccinationSchedule from '../views/Vacunaciones.vue'
 import Reports from '../views/Reportes.vue'
 import Finance from '../views/Finanzas.vue'
 import MilkProduction from '../views/ProduccionLeche.vue'
+import Login from '../views/Login.vue'
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
     {
+      path: '/login',
+      name: 'Login',
+      component: Login
+    },
+    {
       path: '/',
       name: 'Panel Principal',
-      component: Dashboard
-    },
+      component: Dashboard,
+      meta: { requiresAuth: true }    },
     {
       path: '/animals',
       name: 'Animales',
-      component: AnimalList
+      component: AnimalList,
+      meta: { requiresAuth: true }
     },
     {
       path: '/animals/new',
       name: 'Nuevo Animal',
-      component: AnimalForm
+      component: AnimalForm,
+      meta: { requiresAuth: true }
     },
     {
       path: '/animals/:id',
       name: 'Detalle del Animal',
       component: AnimalDetail,
-      props: true
+      props: true,
+      meta: { requiresAuth: true }
     },
     {
       path: '/animals/:id/edit',
       name: 'Editar Animal',
       component: AnimalForm,
-      props: true
+      props: true,
+      meta: { requiresAuth: true }
     },
     {
       path: '/vaccinations',
       name: 'Vacunaciones',
-      component: VaccinationSchedule
+      component: VaccinationSchedule,
+      meta: { requiresAuth: true }
     },
     {
       path: '/reports',
       name: 'Informes',
-      component: Reports
+      component: Reports,
+      meta: { requiresAuth: true }
     },
     {
       path: '/finance',
@@ -62,3 +74,16 @@ const router = createRouter({
 })
 
 export default router
+
+// Guardián de navegación
+router.beforeEach((to, from, next) => {
+  const isAuthenticated = sessionStorage.getItem('isAuthenticated') === 'true'
+  
+  if (to.meta.requiresAuth && !isAuthenticated) {
+    next('/login')
+  } else if (to.path === '/login' && isAuthenticated) {
+    next('/')
+  } else {
+    next()
+  }
+})

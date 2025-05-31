@@ -1,13 +1,20 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '../../stores/authStore'
 
 const emit = defineEmits<{
   toggleSidebar: []
 }>()
 
 const router = useRouter()
+const authStore = useAuthStore()
 const searchQuery = ref('')
+
+const handleLogout = () => {
+  authStore.logout()
+  router.push('/login')
+}
 
 const handleSearch = () => {
   if (searchQuery.value.trim()) {
@@ -35,9 +42,7 @@ const handleSearch = () => {
             {{ $route.name }}
           </h1>
         </div>
-      </div>
-
-      <div class="flex items-center space-x-4">
+      </div>      <div class="flex items-center space-x-4">
         <div class="relative">
           <input
             v-model="searchQuery"
@@ -53,6 +58,14 @@ const handleSearch = () => {
             <i class="pi pi-search"></i>
           </button>
         </div>
+
+        <button
+          @click="handleLogout"
+          class="flex items-center px-3 py-2 rounded-lg text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+        >
+          <i class="pi pi-sign-out mr-2"></i>
+          <span class="hidden md:inline">Cerrar Sesión</span>
+        </button>
       </div>
     </div>
   </header>

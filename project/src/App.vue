@@ -1,11 +1,24 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { useAuthStore } from './stores/authStore'
 import Sidebar from './components/layout/Sidebar.vue'
 import Header from './components/layout/Header.vue'
 
 const isSidebarOpen = ref(true)
 const router = useRouter()
+const route = useRoute()
+const authStore = useAuthStore()
+
+// Inicializar la autenticación al cargar la app
+onMounted(() => {
+  authStore.initAuth()
+})
+
+// Determinar si mostrar el layout completo
+const showFullLayout = computed(() => {
+  return authStore.isAuthenticated && route.path !== '/login'
+})
 
 const toggleSidebar = () => {
   isSidebarOpen.value = !isSidebarOpen.value
@@ -13,7 +26,8 @@ const toggleSidebar = () => {
 </script>
 
 <template>
-  <div class="flex h-screen bg-blue-50">
+  <!-- Layout para usuarios autenticados -->
+  <div v-if="showFullLayout" class="flex h-screen bg-blue-50">
     <Sidebar :is-open="isSidebarOpen" @toggle="toggleSidebar" />
     
     <div class="flex flex-col flex-1 overflow-hidden">
@@ -27,6 +41,15 @@ const toggleSidebar = () => {
         </router-view>
       </main>
     </div>
+  </div>
+
+  <!-- Layout simple para login -->
+  <div v-else>
+    <router-view v-slot="{ Component }">
+      <transition name="fade" mode="out-in">
+        <component :is="Component" />
+      </transition>
+    </router-view>
   </div>
 </template>
 
