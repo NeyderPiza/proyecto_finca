@@ -28,7 +28,7 @@ const handleSubmit = () => {
           FincaPiza
         </h2>
         <p class="mt-2 text-center text-sm text-gray-600">
-          Sistema de Gestión de Finca
+          Finca familia Piza-Basto
         </p>
       </div>
       <form class="mt-8 space-y-6" @submit.prevent="handleSubmit">
