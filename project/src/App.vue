@@ -1,19 +1,27 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { useAuthStore } from '@/stores/authStore'
 import Sidebar from './components/layout/Sidebar.vue'
 import Header from './components/layout/Header.vue'
 
 const isSidebarOpen = ref(true)
 const router = useRouter()
+const route = useRoute()
+const authStore = useAuthStore()
 
 const toggleSidebar = () => {
   isSidebarOpen.value = !isSidebarOpen.value
 }
+
+onMounted(() => {
+  authStore.initAuth()
+})
 </script>
 
 <template>
-  <div class="flex h-screen bg-blue-50">
+  <!-- Layout con sidebar y header solo para rutas autenticadas -->
+  <div v-if="route.meta.requiresAuth" class="flex h-screen bg-blue-50">
     <Sidebar :is-open="isSidebarOpen" @toggle="toggleSidebar" />
     
     <div class="flex flex-col flex-1 overflow-hidden">
@@ -27,6 +35,15 @@ const toggleSidebar = () => {
         </router-view>
       </main>
     </div>
+  </div>
+
+  <!-- Rutas públicas sin layout (login) -->
+  <div v-else>
+    <router-view v-slot="{ Component }">
+      <transition name="fade" mode="out-in">
+        <component :is="Component" />
+      </transition>
+    </router-view>
   </div>
 </template>
 
