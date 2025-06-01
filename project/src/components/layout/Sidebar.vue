@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useAuthStore } from '@/stores/authStore'
+import type { NavigationItem } from '@/types'
 
 const props = defineProps<{
   isOpen: boolean
@@ -12,15 +14,27 @@ const emit = defineEmits<{
 
 const router = useRouter()
 const route = useRoute()
+const authStore = useAuthStore()
 
-const navigationItems = [
-  { name: 'Panel Principal', path: '/', icon: 'pi pi-home' },
-  { name: 'Animales', path: '/animals', icon: 'pi pi-list' },
-  { name: 'Vacunaciones', path: '/vaccinations', icon: 'pi pi-calendar' },
-  { name: 'Finanzas', path: '/finance', icon: 'pi pi-dollar' },
-  { name: 'Informes', path: '/reports', icon: 'pi pi-chart-bar' },
-  { name: 'Producción de Leche', path: '/milk-production', icon: 'pi pi-chart-bar' }
-]
+const isAdmin = computed(() => authStore.currentUser?.role === 'admin')
+
+const navigationItems = computed<NavigationItem[]>(() => {
+  const items: NavigationItem[] = [
+    { name: 'Panel Principal', path: '/', icon: 'pi pi-home' },
+    { name: 'Animales', path: '/animals', icon: 'pi pi-list' },
+    { name: 'Vacunaciones', path: '/vaccinations', icon: 'pi pi-calendar' },
+    { name: 'Finanzas', path: '/finance', icon: 'pi pi-dollar' },
+    { name: 'Informes', path: '/reports', icon: 'pi pi-chart-bar' },
+    { name: 'Producción de Leche', path: '/milk-production', icon: 'pi pi-chart-bar' }
+  ]
+
+  // Añadir enlace de usuarios solo si es administrador
+  if (isAdmin.value) {
+    items.push({ name: 'Usuarios', path: '/users', icon: 'pi pi-users' })
+  }
+
+  return items
+})
 
 const isActive = (path: string) => {
   return route.path === path || route.path.startsWith(`${path}/`)
@@ -33,9 +47,8 @@ const isActive = (path: string) => {
     :class="{ 'w-64': isOpen, 'w-20': !isOpen }"
   >
     <div class="p-4 flex items-center justify-between border-b border-blue-100">
-      <div class="flex items-center space-x-3" :class="{ 'justify-center': !isOpen }">
-        <img src="/src/assets/farm-logo.png" alt="Logo Granja" class="h-10 w-10" />
-        <h1 v-if="isOpen" class="text-xl font-bold text-blue-600">GranjaApp</h1>
+      <div class="flex items-center space-x-3" :class="{ 'justify-center': !isOpen }">        <img src="@/assets/farm-logo.png" alt="Logo Finca" class="h-10 w-10" />
+        <h1 v-if="isOpen" class="text-xl font-bold text-blue-600">FincaPiza</h1>
       </div>
       <button
         @click="emit('toggle')"

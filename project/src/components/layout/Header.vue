@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/authStore'
 
 const emit = defineEmits<{
   toggleSidebar: []
 }>()
 
 const router = useRouter()
+const authStore = useAuthStore()
 const searchQuery = ref('')
 
 const handleSearch = () => {
@@ -15,6 +17,13 @@ const handleSearch = () => {
       path: '/animals',
       query: { search: searchQuery.value }
     })
+  }
+}
+
+const handleLogout = () => {
+  if (confirm('¿Estás seguro de que deseas cerrar sesión?')) {
+    authStore.logout()
+    router.push('/login')
   }
 }
 </script>
@@ -53,6 +62,14 @@ const handleSearch = () => {
             <i class="pi pi-search"></i>
           </button>
         </div>
+
+        <button
+          @click="handleLogout"
+          class="flex items-center px-3 py-2 rounded-lg text-red-600 hover:bg-red-50"
+          title="Cerrar sesión"
+        >
+          <i class="pi pi-power-off"></i>
+        </button>
       </div>
     </div>
   </header>
