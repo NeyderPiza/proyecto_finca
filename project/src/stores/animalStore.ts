@@ -425,6 +425,28 @@ export const useAnimalStore = defineStore('animals', () => {
     }
   }
 
+  function deleteAnimal(id: string) {
+    try {
+      const index = animals.value.findIndex(a => a.id === id)
+      if (index === -1) {
+        console.error('Animal no encontrado:', id)
+        return false
+      }
+      
+      // Crear una nueva lista sin el animal eliminado
+      const newAnimals = animals.value.filter(a => a.id !== id)
+      
+      // Actualizar la lista de animales
+      animals.value = newAnimals
+      
+      console.log('Animal eliminado exitosamente:', id)
+      return true
+    } catch (error) {
+      console.error('Error al eliminar animal:', error)
+      return false
+    }
+  }
+
   function calculateAge(birthDate: string): string {
     const today = new Date()
     const birth = parseISO(birthDate)
@@ -495,6 +517,7 @@ export const useAnimalStore = defineStore('animals', () => {
     getAnimalById,
     addAnimal,
     updateAnimal,
+    deleteAnimal,
     calculateAge,
     addMilkProduction,
     addMilkExpense,

@@ -74,6 +74,23 @@ const editAnimal = () => {
   router.push(`/animals/${props.id}/edit`)
 }
 
+const deleteAnimal = () => {
+  if (animal.value && confirm('¿Estás seguro de que deseas eliminar este animal? Esta acción no se puede deshacer.')) {
+    try {
+      const success = animalStore.deleteAnimal(props.id)
+      if (success) {
+        alert('Animal eliminado exitosamente')
+        router.push('/animals')
+      } else {
+        alert('No se pudo eliminar el animal. Por favor intente nuevamente.')
+      }
+    } catch (error) {
+      console.error('Error al eliminar animal:', error)
+      alert('Ocurrió un error al eliminar el animal.')
+    }
+  }
+}
+
 const addVaccination = () => {
   // TODO: Implementar registro de vacunación
   console.log('Agregar vacunación')
@@ -124,6 +141,13 @@ if (!animal.value) {
         >
           <i class="pi pi-pencil mr-2"></i>
           Editar
+        </button>
+        <button
+          @click="deleteAnimal"
+          class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+        >
+          <i class="pi pi-trash mr-2"></i>
+          Eliminar
         </button>
       </div>
     </div>
