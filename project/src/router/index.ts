@@ -8,6 +8,7 @@ import VaccinationSchedule from '../views/Vacunaciones.vue'
 import Reports from '../views/Reportes.vue'
 import Finance from '../views/Finanzas.vue'
 import MilkProduction from '../views/ProduccionLeche.vue'
+import MilkExpensesHistory from '../views/HistorialGastosLeche.vue'
 import Login from '../views/Login.vue'
 import Users from '../views/Usuarios.vue'
 
@@ -73,6 +74,12 @@ const router = createRouter({
       path: '/milk-production',
       name: 'Producción de Leche',
       component: MilkProduction,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/milk-expenses-history',
+      name: 'Historial de Gastos Leche',
+      component: MilkExpensesHistory,
       meta: { requiresAuth: true }
     },
     {

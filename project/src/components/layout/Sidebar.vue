@@ -25,7 +25,8 @@ const navigationItems = computed<NavigationItem[]>(() => {
     { name: 'Vacunaciones', path: '/vaccinations', icon: 'pi pi-calendar' },
     { name: 'Finanzas', path: '/finance', icon: 'pi pi-dollar' },
     { name: 'Informes', path: '/reports', icon: 'pi pi-chart-bar' },
-    { name: 'Producción de Leche', path: '/milk-production', icon: 'pi pi-chart-bar' }
+    { name: 'Producción de Leche', path: '/milk-production', icon: 'pi pi-chart-line' },
+    { name: 'Historial de Gastos', path: '/milk-expenses-history', icon: 'pi pi-wallet' }
   ]
 
   // Añadir enlace de usuarios solo si es administrador
