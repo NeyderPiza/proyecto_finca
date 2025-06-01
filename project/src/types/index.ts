@@ -113,3 +113,9 @@ export interface MilkProductionSummary {
   byFarm: Record<string, FarmMilkSummary>
   monthlyData: MonthlyMilkData[]
 }
+
+export interface NavigationItem {
+  name: string
+  path: string
+  icon: string
+}

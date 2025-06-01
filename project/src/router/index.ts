@@ -9,6 +9,7 @@ import Reports from '../views/Reportes.vue'
 import Finance from '../views/Finanzas.vue'
 import MilkProduction from '../views/ProduccionLeche.vue'
 import Login from '../views/Login.vue'
+import Users from '../views/Usuarios.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -73,6 +74,12 @@ const router = createRouter({
       name: 'Producción de Leche',
       component: MilkProduction,
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/users',
+      name: 'Usuarios',
+      component: Users,
+      meta: { requiresAuth: true, requiresAdmin: true }
     }
   ]
 })
@@ -84,6 +91,11 @@ router.beforeEach((to) => {
   // Si la página requiere autenticación y el usuario no está autenticado
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     return '/login'
+  }
+
+  // Si la página requiere rol de admin y el usuario no es admin
+  if (to.meta.requiresAdmin && authStore.currentUser?.role !== 'admin') {
+    return '/'
   }
 
   // Si el usuario está autenticado e intenta acceder al login, redirigir al dashboard
