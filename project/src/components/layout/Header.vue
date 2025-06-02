@@ -30,8 +30,7 @@ const handleLogout = () => {
 
 <template>
   <header class="bg-white shadow-sm border-b border-blue-100 z-10">
-    <div class="flex items-center justify-between px-4 py-3">
-      <div class="flex items-center">
+    <div class="flex items-center justify-between px-4 py-3">      <div class="flex items-center space-x-4">
         <button
           @click="emit('toggleSidebar')"
           class="p-2 rounded-md text-blue-600 hover:text-blue-800 hover:bg-blue-50 focus:outline-none"
@@ -39,10 +38,13 @@ const handleLogout = () => {
           <i class="pi pi-bars"></i>
         </button>
 
-        <div class="ml-4 md:block hidden">
-          <h1 class="text-lg font-semibold text-blue-900">
-            {{ $route.name }}
-          </h1>
+        <div class="flex items-center">
+          <img src="@/assets/farm-logo.png" alt="Logo Finca" class="h-8 w-8" />
+          <div class="ml-4 md:block hidden">
+            <h1 class="text-lg font-semibold text-blue-900">
+              {{ $route.name }}
+            </h1>
+          </div>
         </div>
       </div>
 
